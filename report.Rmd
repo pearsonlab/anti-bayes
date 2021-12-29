@@ -1,0 +1,67 @@
+---
+title: "Bayesian Estimates of Anti-Bayesian Psychometric Curves"
+author: "John Pearson"
+date: "12/28/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+require("rstan")
+rstan_options(auto_write=TRUE)
+require("tidyverse")
+# require("latex2exp")
+require(booktabs)
+require(kable)
+```
+
+```{r}
+dat <- read_csv("data/discrimination.csv")
+# layer_names = levels(as.factor(dat$Layer))
+# protein_names = levels(as.factor(dat$Immunolabeled_Protein))
+```
+# Model specification:
+As detailed in the notes, given an _objective_ target movement $x$, the probability of reporting a jump is 
+\begin{equation}
+D(x) = \int_{|\tilde{x}| > \tilde{x}_c} p(\tilde{x}|x)\, dx  
+    = \Phi\left(-\frac{\tilde{x}_c + x}{\sigma_t} \right) + 1 - \Phi\left(\frac{\tilde{x}_c - x}{\sigma_t} \right) \label{norm_cdf_D} 
+\end{equation}
+where $\sigma_t$ is ``target noise'' that represents the uncertainty due to target size and 
+\begin{equation}
+\tilde{x}_c^2 \equiv \frac{2 \log \frac{p(\neg J)}{p(J)} + \log \frac{\sigma_t^2 + \sigma_J^2}{\sigma_t^2 + \sigma_{\neg J}^2}}{\frac{1}{\sigma_t^2 + \sigma_{\neg J}^2} - \frac{1}{\sigma_t^2 + \sigma_J^2}}, 
+\end{equation}
+where $p(J)$ and $p(\neg J)$ are the prior probability of jump and no-jump, respectively, and $\sigma^2_J$ and $\sigma^2_{\neg J}$ are the widths of the jump and no-jump distributions.
+<!-- For modeling the data, we take $\sigma^2_{\neg J} = 0$, so that this simplifies to -->
+<!-- \begin{equation} -->
+<!-- \frac{\tilde{x}_c^2}{\sigma_t^2} \equiv \left[2 \log \frac{p(\neg J)}{p(J)} + \log \left(1 +  \frac{\sigma_J^2}{\sigma_t^2}\right) \right]\left(1 + \left(\frac{\sigma^2_J}{\sigma^2_t} \right)^{-1} \right), \label{x_critical} -->
+<!-- \end{equation} -->
+Thus the psychometric curve is a function of a width parameter $\sigma_t$ and a threshold that depends on both the prior log odds and the widths of the jump and no-jump distributions. In theory, all of these parameters are experimentally determined, but we want to fit them empirically. 
+
+```{r, fig.width=4, fig.height=3}
+xc <- function(st, sJ, snJ, logodds){
+  numerator <- 2 * logodds + log(st^2 + sJ^2) - log(st^2 + snJ^2)
+  denominator <- 1/(st^2 + snJ^2) - 1/(st^2 + sJ^2)
+  return(sqrt(numerator/denominator))
+}
+
+plot_data <- expand_grid(st=c(0.2, 0.4, 0.6), sJ=c(2.5), snJ=c(0.2, 0.4),
+                         logodds=seq(from=-log(5), to=log(5), by=0.01)) %>%
+  mutate(xc=xc(st, sJ, snJ, logodds), snJ=as.factor(snJ), st=as.factor(st),
+         id=stringr::str_c("st=", st, "; snJ=", snJ))
+
+plot_data %>% ggplot(mapping=aes(x=logodds, y=xc, color=st, linetype=snJ)) + geom_path()
+```
+
+```{r}
+conditions <- dat %>% filter(Monkey==1) %>%
+  select(TargetWidth, isSaccade, Prior) %>%
+  distinct()
+```
+
+The primary difficulty in doing this is a lack of identifiability between changes in the log prior odds, $\log \frac{p(\neg J)}{p(J)}$ and the width of the jump distribution $\sigma^2_J$ and non-jump distribution $\sigma^2_{\neg J}$. In the data, these take on discrete values $\log \frac{p(\neg J)}{p(J)} \in \lbrace 0, \pm \log 4 \rbrace$, $\sigma_J = 2.5$, $\sigma_{\neg J} = 0.2$, $\sigma_t \in \lbrace 0.5, 1.25, 1.75, 2 \rbrace$ (only one of the two largest of these per monkey). It is also assumed that changes in motor noise due to saccadic responses will result in a subjective change in $\sigma^2_{\neg J}$. If we wish to fit all these parameters empirically, this requires $3 + 1 + 4 + 2 = 10$ free parameters, whereas the existing conditions are:
+```{r}
+knitr::kable(conditions, row.names = TRUE)
+```
+which makes a unique identification of parameters possible in theory.
+
+
