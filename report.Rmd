@@ -83,3 +83,30 @@ $\log \frac{p(\neg J)}{p(J)}$ (\texttt{Prior == 0.8}) & \texttt{pr\_odds - dlpl}
 \end{table}
 Note that, in this scheme, all the \texttt{d*} variables are restricted to be positive to enforce the monotonicity described above.
 
+# Running the model
+```{r}
+dat <- filter(dat, Monkey==1)
+TargetWidth <- as.integer(as.factor(dat$TargetWidth))
+Prior <- as.integer(as.factor(dat$Prior))
+
+
+rstan_data <- list(Nrows=dim(dat)[1], 
+                   response=dat$Response,
+                   jump=dat$`Jump Size`,
+                   isSaccade=as.integer(dat$isSaccade),
+                   midwidth=as.integer(TargetWidth==2),
+                   maxwidth=as.integer(TargetWidth==3),
+                   minprior=as.integer(Prior==1),
+                   maxprior=as.integer(Prior==3)
+                   )
+fit <- stan(
+  file = "basic_model.stan",  # Stan program
+  data = rstan_data,    # named list of data
+  chains = 1,             # number of Markov chains
+  warmup = 100,          # number of warmup iterations per chain
+  iter = 110,            # total number of iterations per chain
+  cores = 4,              # number of cores (could use one per chain)
+  refresh = 100           # no progress shown
+)
+```
+
