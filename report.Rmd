@@ -62,7 +62,7 @@ The primary difficulty in doing this is a lack of identifiability between change
 ```{r}
 knitr::kable(conditions, row.names = TRUE)
 ```
-which makes a unique identification of parameters possible in theory.
+which makes a unique identification of parameters possible in theory.\footnote{It is also worth noting that the \emph{width} of the psychometric curve gives an independent estimate of $\sigma_t$, so that we have one fewer free parameter to estimate from $\tilde{x}_c$ than it might appear.}
 
 Now, we assume in addition that the subjective estimates of quantities like $\sigma_t$ increase monotonically with their true underlying values, which leads us to the following strategy: First, we convert these parameters to factors. Second, we use a difference coding scheme between factor levels, as summarized below:
 \begin{table}[h]
