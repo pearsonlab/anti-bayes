@@ -52,20 +52,20 @@ transformed parameters {
                   sJ, snJ + isSaccade[j] * dsnJ, 
                   pr_odds - maxprior[j] * dlpl + minprior[j] * dlpu); 
     p_resp[j] = theta[2] + 
-      theta[1] * (normal_cdf(-jump[j], xc[j], st + midwidth[j] * dst1 + maxwidth[j] * dst2) 
-      + 1 - normal_cdf(-jump[j], -xc[j], st + midwidth[j] * dst1 + maxwidth[j] * dst2));
+      theta[1] * (Phi_approx(-(jump[j] + xc[j])/(st + midwidth[j] * dst1 + maxwidth[j] * dst2)) 
+      + 1 - Phi_approx((xc[j] - jump[j])/(st + midwidth[j] * dst1 + maxwidth[j] * dst2)));
   }
 }
 
 model {
-  sJ ~ gamma(1, 1/2.5);
+  sJ ~ gamma(5, 5/2.5);
   snJ ~ gamma(1, 1/0.2);
   dsnJ ~ gamma(1, 1);
-  dst1 ~ gamma(1, 1);
-  dst2 ~ gamma(1, 1);
-  pr_odds ~ normal(0, 3);
-  dlpu ~ normal(0, 3);
-  dlpl ~ normal(0, 3);
+  dst1 ~ gamma(1, 5);
+  dst2 ~ gamma(1, 5);
+  pr_odds ~ normal(0, .1);
+  dlpu ~ normal(0, 1);
+  dlpl ~ normal(0, 1);
   theta ~ dirichlet([20, 1, 1]');
   response ~ bernoulli(p_resp);
 }
