@@ -84,8 +84,8 @@ $\log \frac{p(\neg J)}{p(J)}$ (\texttt{Prior == 0.8}) & \texttt{pr\_odds - dlpl}
 Note that, in this scheme, all the \texttt{d*} variables are restricted to be positive to enforce the monotonicity described above.
 
 # Running the model
-```{r}
-dat <- filter(dat, Monkey==1)
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, results='hide'}
+stan_dat <- filter(dat, Monkey==1) %>% slice_sample(prop=.1)
 TargetWidth <- as.integer(as.factor(dat$TargetWidth))
 Prior <- as.integer(as.factor(dat$Prior))
 
@@ -100,13 +100,41 @@ rstan_data <- list(Nrows=dim(dat)[1],
                    maxprior=as.integer(Prior==3)
                    )
 fit <- stan(
-  file = "basic_model.stan",  # Stan program
+  file = "implicit_model.stan",  # Stan program
   data = rstan_data,    # named list of data
-  chains = 1,             # number of Markov chains
-  warmup = 100,          # number of warmup iterations per chain
-  iter = 110,            # total number of iterations per chain
+  chains = 4,             # number of Markov chains
+  warmup = 1000,          # number of warmup iterations per chain
+  iter = 2000,            # total number of iterations per chain
   cores = 4,              # number of cores (could use one per chain)
   refresh = 100           # no progress shown
 )
+```
+```{r}
+traceplot(fit, c("sJ", "snJ", "dsnJ", "st", "dst1", "dst2", "pr_odds", "dlpl", "dlpu", "theta"))
+```
+```{r}
+fit_summary <- summary(fit, pars=c("sJ", "snJ", "dsnJ", "st", "dst1", "dst2", "pr_odds", "dlpl", "dlpu", "theta"))
+print(fit_summary$summary)
+```
+
+
+```{r}
+pars <- rstan::extract(fit, c("sJ", "snJ", "dsnJ", 
+                              "st", "dst1", "dst2",
+                              "pr_odds", "dlpl", "dlpu", 
+                              "theta[1]", "theta[2]", "theta[3]")) %>%
+  as_tibble 
+```
+
+```{r}
+# calculate summary statistics
+pars_stats <- pars %>% pivot_longer(cols=everything()) %>%
+  group_by(name) %>%
+  summarize(low=quantile(value, 0.05), med=median(value), high=quantile(value, 0.95))
+  
+p <- ggplot(pars_stats) + 
+  geom_pointrange(aes(ymin=low, ymax=high, x=name, y=med)) +
+  ylab("variable")
+p
 ```
 
