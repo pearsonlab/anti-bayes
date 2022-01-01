@@ -60,6 +60,7 @@ transformed parameters {
 model {
   sJ ~ gamma(5, 5/2.5);
   snJ ~ gamma(1, 1/0.2);
+  st ~ gamma(1, 1);
   dsnJ ~ gamma(1, 1);
   dst1 ~ gamma(1, 5);
   dst2 ~ gamma(1, 5);
