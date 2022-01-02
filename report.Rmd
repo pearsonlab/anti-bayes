@@ -85,7 +85,7 @@ Note that, in this scheme, all the \texttt{d*} variables are restricted to be po
 
 # Running the model
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, results='hide'}
-stan_dat <- filter(dat, Monkey==1) %>% slice_sample(prop=.1)
+stan_dat <- filter(dat, Monkey==1) %>% slice_sample(prop=1)
 TargetWidth <- as.integer(as.factor(dat$TargetWidth))
 Prior <- as.integer(as.factor(dat$Prior))
 
@@ -100,7 +100,7 @@ rstan_data <- list(Nrows=dim(dat)[1],
                    maxprior=as.integer(Prior==3)
                    )
 fit <- stan(
-  file = "implicit_model.stan",  # Stan program
+  file = "basic_model.stan",  # Stan program
   data = rstan_data,    # named list of data
   chains = 4,             # number of Markov chains
   warmup = 1000,          # number of warmup iterations per chain
@@ -112,6 +112,7 @@ fit <- stan(
 ```{r}
 traceplot(fit, c("sJ", "snJ", "dsnJ", "st", "dst1", "dst2", "pr_odds", "dlpl", "dlpu", "theta"))
 ```
+
 ```{r}
 fit_summary <- summary(fit, pars=c("sJ", "snJ", "dsnJ", "st", "dst1", "dst2", "pr_odds", "dlpl", "dlpu", "theta"))
 print(fit_summary$summary)
